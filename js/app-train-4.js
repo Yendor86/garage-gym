@@ -169,7 +169,7 @@ function renderWorkout(){
       </div>`;
     }
     return `<div class="wex">
-      <div class="wex-h"><div class="nline"><div class="n">${esc(it.ex)}${lastOnTitle(it.last)}</div>${it.tgt?`<div class="tgt">${esc(it.tgt)}</div>`:''}</div>
+      <div class="wex-h"><div class="nline"><div class="n">${esc(it.ex)}${lastOnTitle(it.last,it.ex)}</div>${it.tgt?`<div class="tgt">${esc(it.tgt)}</div>`:''}</div>
         <button class="rm" style="width:auto; padding:0 3px;" onclick="moveW(${ii},-1)" title="move up">▲</button>
         <button class="rm" style="width:auto; padding:0 3px;" onclick="moveW(${ii},1)" title="move down">▼</button>
         <button class="rm" style="width:auto; padding:0 4px; background:none; border:none; color:var(--muted);" onclick="removeExercise(${ii})" title="remove exercise">✕</button></div>
@@ -179,6 +179,7 @@ function renderWorkout(){
           <span class="sn">${si+1}</span>
           <input type="number" inputmode="decimal" step="0.5" placeholder="${it.bw?'BW kg':'kg'}" value="${s.wt}" data-f="wt" onchange="setField(${ii},${si},'wt',this.value)">
           <input type="number" inputmode="numeric" placeholder="reps" value="${s.reps}" data-f="reps" onchange="setField(${ii},${si},'reps',this.value)">
+          ${perSide(it.ex)?`<span class="perside">${perSide(it.ex)}</span>`:''}
           <div class="done ${s.entryId?'on':''}" onclick="tickSet(${ii},${si})">${s.entryId?'✓':'○'}</div>
           <button class="rm" onclick="removeSet(${ii},${si})" title="remove set">✕</button>
         </div>`).join('')}
@@ -250,9 +251,9 @@ function tickSet(ii,si){
   focusNextOpenSet(ii,si);
   if(pb){ toast('🏆 NEW PB — '+it.ex+'!',true); confetti(); }
 }
-function lastOnTitle(lb){
+function lastOnTitle(lb, ex){
   if(!lb) return '';
-  const bits=lb.wt? fmt(lb.wt)+'×'+lb.reps : (lb.reps+' reps');
+  const bits=loadCopy({ex:ex||lb.ex, wt:lb.wt, reps:lb.reps});
   return `<span class="laston">last ${bits}</span>`;
 }
 function focusNextOpenSet(ii,si){
@@ -354,12 +355,14 @@ function startTimer(sec){
   try{ if(window.Notification && Notification.permission==='default') Notification.requestPermission(); }catch(e){}
   keepRestAlive(true);
   armRestWorker(tEnd);
+  if(typeof shadeRestBegin==='function') shadeRestBegin(tEnd);
   runTimer();
 }
 function restDoneAlarm(){
   toast('Rest done — GO!');
   beep();
   if(navigator.vibrate) navigator.vibrate([200,80,200,80,200,80,500]);
+  if(typeof shadeRestDone==='function') shadeRestDone();
   try{
     if(window.Notification && Notification.permission==='granted')
       new Notification('Garage Gym',{body:'Rest done — GO!',tag:'gg-rest',renotify:true});
@@ -376,6 +379,7 @@ function runTimer(){
       return;
     }
     chip.classList.add('show'); chip.textContent='⏱ '+fmtT(left);
+    if(typeof shadeRestTick==='function') shadeRestTick(left);
   };
   tick(); tInt=setInterval(tick,250);
 }
@@ -384,14 +388,14 @@ function stopTimer(){
   clearInterval(tInt); tEnd=0;
   keepRestAlive(false);
   cancelRestWorker();
+  if(typeof shadeRestStop==='function') shadeRestStop();
   try{ localStorage.removeItem(TKEY); }catch(e){}
   document.getElementById('timerChip').classList.remove('show');
 }
 function resumeTimer(){
   try{
     const e=parseInt(localStorage.getItem(TKEY)||'0');
-    if(e&&e>Date.now()){ tEnd=e; runTimer(); }
+    if(e&&e>Date.now()){ tEnd=e; if(typeof shadeRestBegin==='function') shadeRestBegin(tEnd); runTimer(); }
     else if(e){ localStorage.removeItem(TKEY); tEnd=0; restDoneAlarm(); }
   }catch(err){}
 }
-
