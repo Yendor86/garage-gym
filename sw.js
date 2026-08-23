@@ -1,10 +1,11 @@
 /* Garage Gym PLAY shell cache. Allowlist only. Never cache set rows or Supabase. */
-const CACHE = 'garage-gym-play-v1';
+const CACHE = 'garage-gym-play-v2';
 const SHELL = [
   './',
   './index.html',
   './manifest.webmanifest',
   './css/app.css',
+  './css/boot.css',
   './js/write-guard.js',
   './js/app-data.js',
   './js/app-home.js',
@@ -17,7 +18,8 @@ const SHELL = [
   './js/house-week-boot.js',
   './favicon.png',
   './icon.png',
-  './mark.png'
+  './mark.png',
+  './icon-1024.png'
 ];
 
 function shellKey(url) {
@@ -53,7 +55,7 @@ function isHtml(req, key) {
 
 function isVolatile(req, key) {
   if (isHtml(req, key)) return true;
-  if (key === './css/app.css') return true;
+  if (key === './css/app.css' || key === './css/boot.css') return true;
   return /^(\.\/)?js\/(app-home|app-train-1|app-train-2|app-train-3|app-train-4|app-train|app|app-data|write-guard|week-card|house-week-boot)\.js$/.test(key);
 }
 
