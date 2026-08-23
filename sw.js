@@ -5,7 +5,6 @@ const SHELL = [
   './index.html',
   './manifest.webmanifest',
   './css/app.css',
-  './css/boot.css',
   './js/write-guard.js',
   './js/app-data.js',
   './js/app-home.js',
@@ -19,7 +18,7 @@ const SHELL = [
   './favicon.png',
   './icon.png',
   './mark.png',
-  './icon-1024.png'
+  './splash-mark.png'
 ];
 
 function shellKey(url) {
@@ -55,7 +54,7 @@ function isHtml(req, key) {
 
 function isVolatile(req, key) {
   if (isHtml(req, key)) return true;
-  if (key === './css/app.css' || key === './css/boot.css') return true;
+  if (key === './css/app.css') return true;
   return /^(\.\/)?js\/(app-home|app-train-1|app-train-2|app-train-3|app-train-4|app-train|app|app-data|write-guard|week-card|house-week-boot)\.js$/.test(key);
 }
 
