@@ -28,3 +28,19 @@ function adaptTemplateItems(t){
   });
   return {items,swapped,missing};
 }
+function garageTitleBit(){
+  const key=window.GG_PLAY_KEY;
+  if(key==='full') return 'full rack';
+  if(key==='her') return 'her picks';
+  if(key==='bands') return 'bands + bike';
+  if(key==='dbs') return 'DBs + pull-up';
+  if(key==='bike') return 'bike only';
+  const q=personEquip();
+  if(q.bb&&q.rack) return 'your rack';
+  if(q.band&&q.bike&&!q.bb&&!q.db) return 'bands + bike';
+  if(q.db&&q.pullup&&!q.bb) return 'DBs + pull-up';
+  if(q.bike&&typeof hasLiftGear==='function'&&!hasLiftGear()) return 'bike only';
+  if(q.db&&!q.bb) return 'dumbbells';
+  if(q.band&&!q.bb) return 'bands';
+  return 'this shed';
+}
