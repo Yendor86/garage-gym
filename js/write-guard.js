@@ -22,7 +22,7 @@
     el.id='bootSplash';
     el.className='bootsplash';
     el.setAttribute('aria-hidden','true');
-    el.innerHTML='<img src="icon-1024.png" alt="">';
+    el.innerHTML='<img src="splash-mark.png" alt="">';
     document.body.insertBefore(el, document.body.firstChild);
   }
   if(sessionStorage.getItem('ggBooted')){ el.classList.add('go'); }
