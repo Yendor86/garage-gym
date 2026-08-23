@@ -12,7 +12,6 @@ const SHELL = [
   './js/app.js',
   './js/week-card.js',
   './js/house-week-boot.js',
-  './js/chart.umd.min.js',
   './favicon.png',
   './icon.png',
   './mark.png'
