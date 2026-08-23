@@ -131,7 +131,7 @@ function buildItems(groups,opts){
     const c=sets*(e.ps?70:40)+(sets-1)*rest;
     if(!must && items.length>=AIM) return false;
     if(!must && items.length>=FLOOR && cost+c>budget) return false;
-    const tgt=(type==='c'?p.repC:p.repI)+(e.ps?'/side':'');
+    const tgt=(type==='c'?p.repC:p.repI)+tgtSide(e);
     const lb=lastBest(e.n);
     items.push({ex:e.n,sets,tgt,rest:Math.round(rest),last:lb,wt:lb&&lb.wt?lb.wt:'',reps:lb&&lb.reps?lb.reps:''});
     used.add(e.n); usedFam.add(fam(e.n)); cost+=c; return true;
@@ -373,4 +373,3 @@ function buildMyWeek(){
   toast('Your '+made.length+'-day plan is ready 🗓');
   showPanel('train');
 }
-
