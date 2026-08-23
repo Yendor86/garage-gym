@@ -8,3 +8,11 @@
   window.GG_PLAY_PROJECT = 'sqvybphogacjcqesktos';
   window.GG_PRACTICE_KEY = 'garageGymTracker_play_v1';
 })();
+
+(function(){
+  var el=document.getElementById('bootSplash');
+  if(!el) return;
+  if(sessionStorage.getItem('ggBooted')){ el.classList.add('go'); return; }
+  sessionStorage.setItem('ggBooted','1');
+  setTimeout(function(){ el.classList.add('go'); }, 900);
+})();
