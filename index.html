@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" data-panel="home">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0b1524">
+<link rel="icon" type="image/png" sizes="192x192" href="favicon.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script>
+(function(){
+  try{
+    var d=JSON.parse(localStorage.getItem('garageGymTracker_play_v1')||'{}');
+    var t=d&&d.meta&&d.meta.theme==='light'?'light':'dark';
+    document.documentElement.setAttribute('data-theme',t);
+    var m=document.querySelector('meta[name="theme-color"]');
+    if(m) m.content=t==='light'?'#f3e6cf':'#0b1524';
+    var a=document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]');
+    if(a) a.content=t==='light'?'default':'black-translucent';
+  }catch(e){}
+})();
+</script>
+<meta name="apple-mobile-web-app-title" content="Garage Gym">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Garage Gym</title>
+<link rel="stylesheet" href="css/app.css">
+<script src="js/chart.umd.min.js"></script>
+</head>
+<body>
+<div class="top">
+  <div class="logo"><div class="logohome" onclick="showPanel('home')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showPanel('home')}" role="button" tabindex="0" aria-label="Home"><img src="mark.png" alt="Garage Gym" class="logoimg"><span class="wm">GARAGE<b>GYM</b></span></div><span class="sdot" id="syncDot"></span></div>
+  <div class="userswitch">
+    <button type="button" class="themebtn" id="themeBtn" onclick="toggleTheme()" aria-label="Switch theme"><span class="sunmoon"></span></button>
+    <span class="userdots" id="userSwitch"></span>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="panel active" id="panel-home">
+  <div class="hero">
+    <div class="hi" id="greet">G'day</div>
+    <div class="date" id="heroDate"></div>
+    <div class="cta" id="heroCta"></div>
+  </div>
+  <div class="card" id="homeSuggest" style="display:none; cursor:pointer;"></div>
+  <div class="resume" id="resumeCard" style="display:none;"></div>
+  <div id="ggHouseWeekSlot"><div class="card muted">Loading house week…</div></div>
+  <div class="stats" id="statGrid"></div>
+  <div class="card league-teaser" id="leagueTeaser" style="cursor:pointer;" onclick="showPanel('league')">🏆 <b>House League</b> — how does your gym stack up? <span class="muted" style="font-size:.78rem;">tap for the ladder</span></div>
+  <div class="card bigstat" id="tonnage"></div>
+  <h2>Strength score <span class="sub" id="snapLabel"></span></h2>
+  <div class="card">
+    <div class="bigstat" style="align-items:flex-end; gap:10px;">
+      <div class="n" id="scoreNow">—</div>
+      <div class="d" id="scoreDelta" style="padding-bottom:5px;"></div>
+    </div>
+    <div class="chartbox mini" style="height:120px;"><canvas id="snapChart"></canvas></div>
+    <div id="liftBreak" style="margin-top:6px;"></div>
+  </div>
+  <h2>Your week <span class="sub" id="wkSub"></span></h2>
+  <div class="card"><div class="wkwrap" id="weekStrip"></div></div>
+  <h2>Consistency <span class="sub">12 weeks · brighter = bigger day</span></h2>
+  <div class="card"><div class="hm" id="heatmap"></div></div>
+  <h2>Recent PBs</h2>
+  <div class="card" id="pbFeed"></div>
+</div>
+
+<!-- TRAIN -->
+<div class="panel" id="panel-train">
+  <div class="daycard" style="border-color:var(--gold);" onclick="openBuilder()">
+    <div class="badge" style="background:var(--gold); color:#111;">⚡</div>
+    <div><div class="t">Build a Workout</div><div class="s">only uses what you ticked — your garage, not a commercial gym</div></div>
+    <div class="go">›</div>
+  </div>
+  <div id="garageChip"></div>
+  <div id="customCards"></div>
+  <h2>Your program</h2>
+  <div id="dayCards"></div>
+  <div class="card muted" style="font-size:.78rem; line-height:1.6;">
+    Tap any session to preview & personalise it before starting. The A→B→C→D program is the backbone; flavour days and built workouts are swaps, not extra homework. Generated sessions only use your ticked garage. No bench? The generator picks a floor press — on a template, any bench press works as a floor press.
+  </div>
+</div>
+
+<!-- BUILDER -->
+<div class="panel" id="panel-build">
+  <div id="buildGarage"></div>
+  <h2 class="buildh">What are we training? <span class="sub" id="quizTag"></span></h2>
+  <div class="card">
+    <label style="margin-top:0;">Quick picks</label>
+    <div class="chips" id="quickChips"></div>
+    <label>Muscle groups</label>
+    <div class="chips" id="groupChips"></div>
+    <div class="chips" id="suggChip"></div>
+    <label>How's the body today?</label>
+    <div class="chips" id="vibeChips"></div>
+    <label>Cardio</label>
+    <div class="muted" style="font-size:.72rem; margin:0 0 6px;">Generate adds your best machine (or a walk) when the lift pool is thin, or on Full Body if you own a machine. Chip only if you want extra.</div>
+    <div class="chips" id="cardioAddChips"></div>
+    <button class="genbtn" onclick="generateWorkout()">Generate Workout ⚡</button>
+    <div class="buildfail" id="buildFail"></div>
+    <button class="ghost" style="margin-top:8px;" onclick="buildMyWeek()">🗓 Build my whole week</button>
+    <button class="ghost" style="margin-top:8px;" onclick="openPreview({name:'Custom Workout',items:[],src:'build'});addExercisePicker()">📝 Build from scratch — full A–Z</button>
+    <button class="ghost" style="margin-top:8px;" onclick="showPanel('train')">Back to A–D</button>
+  </div>
+</div>
+
+<!-- PREVIEW / PERSONALISE -->
+<div class="panel" id="panel-preview">
+  <div class="card">
+    <input id="pName" style="font-weight:800; font-size:1.05rem;">
+    <div class="estbar" style="margin-top:10px;">
+      <span>⏱</span><span class="big" id="pEst">—</span><span class="muted" style="font-size:.78rem;">estimated · <span id="pCount"></span> exercises</span>
+    </div>
+    <button onclick="startFromPreview()">Start Workout ▶</button>
+    <div class="row" style="margin-top:8px;">
+      <button class="ghost" onclick="savePreviewAsCustom()">💾 Save</button>
+      <button class="ghost" onclick="addExercisePicker()">+ Add exercise</button>
+      <button class="ghost" onclick="showPanel('train')">Back</button>
+    </div>
+    <div class="row" style="margin-top:8px;">
+      <button class="ghost" onclick="autoOrder()">🎯 Best order</button>
+      <button class="ghost" id="prepBtn" onclick="togglePrep()"></button>
+    </div>
+    <button class="ghost" id="rerollBtn" style="margin-top:8px; display:none;" onclick="generateAnother()">Generate another</button>
+  </div>
+  <div id="pFlag"></div>
+  <div id="pWhy"></div>
+  <div class="card" id="pList"></div>
+</div>
+
+<!-- WORKOUT -->
+<div class="panel" id="panel-workout">
+  <div class="card">
+    <div style="display:flex; align-items:center; gap:10px;">
+      <div>
+        <div style="font-weight:800;" id="wTitle">Workout</div>
+        <div class="muted" style="font-size:.76rem;" id="wSub"></div>
+      </div>
+      <button class="mini ghost" style="margin-left:auto; width:auto;" onclick="addCustomExercise()">+ Exercise</button>
+    </div>
+    <label>Rest timer</label>
+    <div class="seg segwrap" id="timerSeg">
+      <div data-t="auto">Auto</div><div data-t="30">0:30</div><div data-t="60">1:00</div><div data-t="90">1:30</div><div data-t="120">2:00</div><div data-t="150">2:30</div><div data-t="180">3:00</div><div data-t="240">4:00</div><div data-t="300">5:00</div>
+    </div>
+    <div class="muted" style="font-size:.7rem; margin-top:6px;">Auto = recommended rest per exercise (2–3 min big lifts, ~90s accessories). Alarm beeps & vibrates.</div>
+  </div>
+  <div id="wList"></div>
+  <button onclick="finishWorkout()">Finish Workout ✓</button>
+  <button class="ghost" style="margin-top:8px;" onclick="cancelWorkout()">Discard</button>
+</div>
+
+<!-- LOG -->
+<div class="panel" id="panel-log">
+  <div class="card">
+    <label style="margin-top:0;">Exercise</label>
+    <input list="exList" id="fEx" placeholder="Start typing…">
+    <datalist id="exList"></datalist>
+    <div class="row">
+      <div><label>Weight kg</label><input type="number" id="fWt" inputmode="decimal" step="0.5"></div>
+      <div><label>Reps</label><input type="number" id="fReps" inputmode="numeric"></div>
+      <div><label>Sets</label><input type="number" id="fSets" inputmode="numeric" placeholder="1"></div>
+    </div>
+    <label>Date</label><input type="date" id="fDate">
+    <label>Notes</label><input type="text" id="fNotes" placeholder="optional">
+    <button onclick="quickSave()">Save ✓</button>
+  </div>
+  <div class="card">
+    <label style="margin-top:0;">❤️ Cardio & walking</label>
+    <div class="chips" id="cardioChips"></div>
+    <div class="row">
+      <div><label>Minutes</label><input type="number" id="cMins" inputmode="numeric" placeholder="40"></div>
+      <div><label>Distance km <span style="text-transform:none;">(opt)</span></label><input type="number" id="cDist" inputmode="decimal" step="0.1" placeholder="3.5"></div>
+    </div>
+    <label>Effort</label>
+    <div class="seg" id="cIntens">
+      <div class="on" data-i="easy">Easy</div><div data-i="moderate">Moderate</div><div data-i="hard">Hard</div>
+    </div>
+    <div class="muted" style="font-size:.7rem; margin-top:5px;" id="cHint"></div>
+    <label>Machine settings / notes <span style="text-transform:none;">(optional)</span></label>
+    <input type="text" id="cNotes" placeholder="e.g. level 8, incline 5%, 2000m">
+    <label>Date</label><input type="date" id="cDate">
+    <button onclick="saveCardio()">Log cardio ❤️</button>
+  </div>
+  <div class="card">
+    <label style="margin-top:0;">Bodyweight (kg)</label>
+    <div class="row">
+      <input type="number" id="fBw" inputmode="decimal" step="0.1" placeholder="74.5">
+      <button class="mini" style="flex:0 0 auto;" onclick="saveBW()">Log</button>
+    </div>
+    <div class="muted" style="font-size:.74rem; margin-top:8px;" id="bwHint"></div>
+  </div>
+  <h2>History <span class="sub" id="histSub"></span></h2>
+  <div class="seg" id="histSeg">
+    <div class="on" data-h="sessions">Sessions</div><div data-h="sets">All sets</div>
+  </div>
+  <div id="sessionList" style="margin-top:10px;"></div>
+  <div class="card" id="historyList" style="display:none;"></div>
+</div>
+
+<!-- PROGRESS -->
+<div class="panel" id="panel-progress">
+  <div class="card">
+    <label style="margin-top:0;">Strength trend</label>
+    <select id="chartEx"></select>
+    <div class="seg" id="metricSeg">
+      <div class="on" data-m="e1rm">Est. 1RM</div>
+      <div data-m="top">Top set kg</div>
+      <div data-m="vol">Session volume</div>
+    </div>
+    <div class="chartbox"><canvas id="exChart"></canvas></div>
+  </div>
+  <div class="card">
+    <label style="margin-top:0;">Weekly volume (kg)</label>
+    <div class="chartbox"><canvas id="volChart"></canvas></div>
+  </div>
+  <div class="card">
+    <label style="margin-top:0;">Bodyweight</label>
+    <div class="chartbox"><canvas id="bwChart"></canvas></div>
+  </div>
+  <h2>Personal bests</h2>
+  <div class="card">
+    <table>
+      <thead><tr><th>Exercise</th><th style="text-align:right;">Best set</th><th style="text-align:right;">Est. 1RM</th></tr></thead>
+      <tbody id="pbBody"></tbody>
+    </table>
+    <div class="empty" id="pbEmpty">No lifts yet.</div>
+    <div class="muted" style="font-size:.7rem; margin-top:10px;">Est. 1RM = weight × (1 + reps ÷ 30). Bodyweight moves rank by reps.</div>
+  </div>
+</div>
+
+<!-- LEAGUE -->
+<div class="panel" id="panel-league">
+  <h2 style="margin-top:4px;">🏆 House League <span class="sub">weekly resets · history kept</span></h2>
+  <div class="seg" id="lgSeg" style="margin-bottom:10px;">
+    <div class="on" data-p="wk">This Week</div><div data-p="mo">This Month</div><div data-p="yr">This Year</div>
+  </div>
+  <div id="leagueBody"><div class="empty">Loading the ladder…</div></div>
+  <button class="ghost" onclick="loadLeague()">Refresh ladder</button>
+  <button class="ghost" style="margin-top:8px;" onclick="showPanel('home')">Back</button>
+</div>
+
+<!-- MORE -->
+<div class="panel" id="panel-more">
+  <div class="card" id="themeCard"></div>
+  <h2 style="margin-top:4px;">Cloud sync</h2>
+  <div class="card" id="hhCard"></div>
+  <h2>House League</h2>
+  <div class="card" id="leagueCard"></div>
+  <h2>Who's lifting</h2>
+  <div class="card" id="userList"></div>
+  <h2>My training profile</h2>
+  <div class="card">
+    <div class="muted" style="font-size:.82rem;" id="quizSummary">Not set yet.</div>
+    <button class="ghost" style="margin-top:10px;" onclick="openQuiz()">Update goals & experience</button>
+  </div>
+  <h2 id="equipHeading">Our equipment <span class="sub">free · workouts only use what you tick</span></h2>
+  <div class="card" id="equipCard"></div>
+  <h2>Backup</h2>
+  <div class="card">
+    <button class="ghost" onclick="exportData()">Export backup</button>
+    <button class="ghost" style="margin-top:8px;" onclick="document.getElementById('impFile').click()">Import / merge</button>
+    <input type="file" id="impFile" accept=".json" style="display:none;" onchange="importData(this)">
+  </div>
+</div>
+
+<!-- household overlay -->
+<div class="overlay" id="hhOverlay" style="display:none;">
+  <div class="box">
+    <div style="font-weight:800; font-size:1.15rem;">Sync across your devices</div>
+    <div class="muted" style="font-size:.85rem; margin-top:8px; line-height:1.5;">
+      Create a household on the first phone, then join it from the others with the code.
+    </div>
+    <button onclick="createHousehold()" style="margin-top:16px;">Create our household</button>
+    <label style="margin-top:16px;">Or join with a code</label>
+    <div class="row">
+      <input id="joinCode" placeholder="e.g. GYM-XXXXXX" autocapitalize="characters">
+      <button class="mini" style="flex:0 0 auto;" onclick="joinHousehold()">Join</button>
+    </div>
+    <div class="muted" style="text-align:center; margin-top:14px; font-size:.78rem; cursor:pointer;" onclick="document.getElementById('hhOverlay').style.display='none'">Not now — use this device offline</div>
+  </div>
+</div>
+
+<!-- first-run name overlay -->
+<div class="overlay" id="nameOverlay" style="display:none;">
+  <div class="box">
+    <div style="font-weight:800; font-size:1.15rem;">Welcome to Garage Gym 💪</div>
+    <div class="muted" style="font-size:.85rem; margin-top:6px;">Name, then Man or Woman — colour follows the logo.</div>
+    <input id="firstName" placeholder="Your name" autocapitalize="words" style="margin-top:12px;">
+    <div class="whochips" id="firstWhoChips" style="margin-top:14px;">
+      <button type="button" class="whochip man" data-who="m" onclick="pickFirstWho('m')">Man</button>
+      <button type="button" class="whochip woman" data-who="f" onclick="pickFirstWho('f')">Woman</button>
+    </div>
+    <button style="margin-top:14px;" onclick="saveFirstUser()">Let's go ▶</button>
+  </div>
+</div>
+
+
+<!-- add / name + who overlay -->
+<div class="overlay" id="personOverlay" style="display:none;">
+  <div class="box">
+    <div style="font-weight:800; font-size:1.15rem;" id="personTitle">New lifter</div>
+    <div class="muted" style="font-size:.85rem; margin-top:6px;">Name, then Man or Woman — colour follows the logo.</div>
+    <input id="personName" placeholder="Name" autocapitalize="words" style="margin-top:12px;">
+    <div class="whochips" id="personWhoChips" style="margin-top:14px;">
+      <button type="button" class="whochip man" data-who="m" onclick="pickPersonWho('m')">Man</button>
+      <button type="button" class="whochip woman" data-who="f" onclick="pickPersonWho('f')">Woman</button>
+    </div>
+    <button style="margin-top:16px;" onclick="savePersonOverlay()">Add ▶</button>
+    <div class="muted" style="text-align:center; margin-top:12px; font-size:.78rem; cursor:pointer;" onclick="document.getElementById('personOverlay').style.display='none'">Cancel</div>
+  </div>
+</div>
+<!-- quiz overlay -->
+<div class="overlay" id="quizOverlay" style="display:none;">
+  <div class="box">
+    <div style="font-weight:800; font-size:1.15rem;" id="quizTitle">Tune your workouts</div>
+    <div class="muted" style="font-size:.82rem; margin-top:6px;">30 seconds — makes every generated workout yours, not generic.</div>
+    <label>My main goal</label>
+    <select id="qGoal">
+      <option value="muscle">Build muscle</option>
+      <option value="strength">Get stronger</option>
+      <option value="tone">Tone up & stay fit</option>
+    </select>
+    <label>Experience</label>
+    <select id="qLevel">
+      <option value="new">New to lifting</option>
+      <option value="some">Some experience</option>
+      <option value="exp">Well trained</option>
+    </select>
+    <label>Time per session</label>
+    <select id="qDur">
+      <option value="30">~30 minutes</option>
+      <option value="45" selected>~45 minutes</option>
+      <option value="60">~60 minutes</option>
+      <option value="75">~75 minutes</option>
+    </select>
+    <label>Days per week I can train</label>
+    <select id="qDays">
+      <option value="2">2 days</option>
+      <option value="3" selected>3 days</option>
+      <option value="4">4 days</option>
+      <option value="5">5 days</option>
+      <option value="6">6 days</option>
+    </select>
+    <label>Pull-ups</label>
+    <select id="qPull">
+      <option value="yes">I can do them</option>
+      <option value="band">Only assisted / negatives</option>
+      <option value="no">Not yet — leave them out</option>
+    </select>
+    <label>Anything to go easy on?</label>
+    <div class="chips" id="qAvoid"></div>
+    <label>Extra focus (optional)</label>
+    <div class="chips" id="qFocus"></div>
+    <button style="margin-top:16px;" onclick="saveQuiz()">Save ✓</button>
+  </div>
+</div>
+
+<!-- exercise picker overlay -->
+<div class="overlay" id="pickOverlay" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+  <div class="box">
+    <div style="font-weight:800;" id="pickTitle">Exercise library <span class="muted" style="font-weight:400; font-size:.75rem;">A–Z · filtered to your equipment</span></div>
+    <input id="pickSearch" placeholder="Search…" style="margin-top:10px;" oninput="renderPicker()">
+    <div class="eqrow" style="border:none; padding:8px 0 0;">
+      <input type="checkbox" id="pickAllBox" onchange="pickAll=this.checked;renderPicker()">
+      <span class="muted" style="font-size:.8rem;">Show everything (incl. gear we don't have)</span>
+    </div>
+    <div id="pickList" style="margin-top:6px;"></div>
+  </div>
+</div>
+
+<div class="timer" id="timerChip" onclick="showPanel('workout')">⏱ 90</div>
+<div class="toast" id="toast"></div>
+
+<nav>
+  <div class="ni active" data-p="home"><span class="ic">📊</span>Home</div>
+  <div class="ni" data-p="train"><span class="ic">🏋️</span>Train</div>
+  <div class="ni" data-p="log"><span class="ic">✏️</span>Log</div>
+  <div class="ni" data-p="progress"><span class="ic">📈</span>Progress</div>
+  <div class="ni" data-p="more"><span class="ic">⚙️</span>More</div>
+</nav>
+
+
+<script src="js/write-guard.js"></script>
+<script src="js/app-data.js"></script>
+<script src="js/app-home.js"></script>
+<script src="js/app-train.js"></script>
+<script src="js/app.js"></script>
+<script src="js/week-card.js"></script>
+<script src="js/house-week-boot.js"></script>
+<script>
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').catch(function(){});
+}
+</script>
+</body>
+</html>
