@@ -96,6 +96,7 @@
   .setrow{display:flex; gap:8px; align-items:center; padding:7px 14px;}
   .setrow.did{background:rgba(62,207,106,.12);}
   .setrow .sn{color:var(--muted); font-size:.74rem; width:18px;}
+  .setrow .perside{color:var(--muted); font-size:.72rem; white-space:nowrap;}
   .setrow input{padding:9px; text-align:center; font-size:1.05rem; font-weight:600;}
   .setrow .done{min-width:48px; min-height:48px; width:48px; height:48px; flex:0 0 48px; border-radius:12px; background:var(--card2); border:1px solid var(--line); color:var(--muted); font-size:1.35rem; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer;}
   .setrow .done.on{background:var(--green); border-color:var(--green); color:#0e1012;}
