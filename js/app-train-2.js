@@ -373,3 +373,4 @@ function buildMyWeek(){
   toast('Your '+made.length+'-day plan is ready 🗓');
   showPanel('train');
 }
+
