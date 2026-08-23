@@ -123,7 +123,7 @@ function renderPreview(){
     const bump=loadBumpHint(it.ex,it.tgt);
     const hintLine=bump? `<div class="hintline">${esc(bump)}</div>` : '';
     return `<div class="prow">
-      <div style="flex:1;"><div class="nm">${bad?'⚠️ ':''}${esc(it.ex)}${l?'<span class="grptag">'+GLABEL[l.g[0]]+'</span>':''}${why?'<span class="why">'+esc(why)+'</span>':''}${lastOnTitle(lb)}</div>
+      <div style="flex:1;"><div class="nm">${bad?'⚠️ ':''}${esc(it.ex)}${l?'<span class="grptag">'+GLABEL[l.g[0]]+'</span>':''}${why?'<span class="why">'+esc(why)+'</span>':''}${lastOnTitle(lb,it.ex)}</div>
         <div class="dt">${it.sets} × ${it.tgt} · rest ${Math.round((it.rest||90)/60*10)/10} min${alt?' · <span style="color:var(--u);">or '+esc(alt.n)+'</span>':''}</div>${loadLine}${hintLine}</div>
       <div style="display:flex; flex-direction:column; gap:2px;">
         <button class="ord" onclick="moveItem(${i},-1)" title="move up">▲</button>
@@ -147,7 +147,7 @@ function swapEx(i){
   pickList=alts;
   pickCb=(name)=>{
     const a=LIB[name];
-    P.items[i]={ex:name,sets:it.sets,tgt:it.tgt.replace('/side','')+((a&&a.ps)?'/side':''),rest:restFor(name)};
+    P.items[i]={ex:name,sets:it.sets,tgt:it.tgt.replace(/\/(side|arm|leg)/,'')+tgtSide(a),rest:restFor(name)};
     pickList=null; renderPreview();
   };
   document.getElementById('pickSearch').value='';
@@ -166,7 +166,7 @@ function addExercisePicker(){
   pickCb=(name)=>{
     const q=quizOr(), p=PARAMS[q.goal], l=LIB[name];
     const type=l?l.t:'i';
-    P.items.push({ex:name,sets:type==='c'?p.sets:Math.max(2,p.sets-1),tgt:(type==='c'?p.repC:p.repI)+((l&&l.ps)?'/side':''),rest:restFor(name)});
+    P.items.push({ex:name,sets:type==='c'?p.sets:Math.max(2,p.sets-1),tgt:(type==='c'?p.repC:p.repI)+tgtSide(l),rest:restFor(name)});
     renderPreview();
   };
   document.getElementById('pickSearch').value='';
