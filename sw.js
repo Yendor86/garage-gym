@@ -8,7 +8,8 @@ const SHELL = [
   './js/write-guard.js',
   './js/app-data.js',
   './js/app-home.js',
-  './js/app-train.js',
+  './js/app-train-a.js',
+  './js/app-train-b.js',
   './js/app.js',
   './js/week-card.js',
   './js/house-week-boot.js',
@@ -51,7 +52,7 @@ function isHtml(req, key) {
 function isVolatile(req, key) {
   if (isHtml(req, key)) return true;
   if (key === './css/app.css') return true;
-  return /^(\.\/)?js\/(app-home|app-train|app|app-data|write-guard|week-card|house-week-boot)\.js$/.test(key);
+  return /^(\.\/)?js\/(app-home|app-train-a|app-train-b|app-train|app|app-data|write-guard|week-card|house-week-boot)\.js$/.test(key);
 }
 
 function putOk(req, res) {
