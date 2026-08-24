@@ -253,7 +253,14 @@ function tickSet(ii,si){
 }
 function lastOnTitle(lb, ex){
   if(!lb) return '';
-  const bits=loadCopy({ex:ex||lb.ex, wt:lb.wt, reps:lb.reps});
+  let bits='';
+  try{
+    if(typeof loadCopy==='function') bits=loadCopy({ex:ex||lb.ex, wt:lb.wt, reps:lb.reps});
+  }catch(e){}
+  if(!bits){
+    const w=lb.wt, r=lb.reps;
+    bits=w? ((typeof fmt==='function'?fmt(w):w)+' kg × '+r) : ((r||0)+' reps');
+  }
   return `<span class="laston">last ${bits}</span>`;
 }
 function focusNextOpenSet(ii,si){
