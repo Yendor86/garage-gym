@@ -1,5 +1,5 @@
 /* Garage Gym PLAY shell cache. Allowlist only. Never cache set rows or Supabase. */
-const CACHE = 'garage-gym-play-v6';
+const CACHE = 'garage-gym-play-v7';
 const SHELL = [
   './',
   './index.html',
