@@ -254,7 +254,7 @@ function pickExercise(n){
 function savePreviewAsCustom(){
   if(!P||!P.items.length){ toast('Nothing to save'); return; }
   const name=document.getElementById('pName').value.trim()||'My Workout';
-  const w={id:P.src==='custom'&&P.id?P.id:uid(), name, items:P.items.map(it=>it.mob?{ex:it.ex,mob:true,mins:it.mins,tip:it.tip}:it.cardio?{ex:it.ex,cardio:true,mins:it.mins,intensity:it.intensity}:{ex:it.ex,sets:it.sets,tgt:it.tgt,rest:it.rest}), est:estTime(P.items)};
+  const w={id:P.src==='custom'&&P.id?P.id:uid(), user:db.current, name, items:P.items.map(it=>it.mob?{ex:it.ex,mob:true,mins:it.mins,tip:it.tip}:it.cardio?{ex:it.ex,cardio:true,mins:it.mins,intensity:it.intensity}:{ex:it.ex,sets:it.sets,tgt:it.tgt,rest:it.rest}), est:estTime(P.items)};
   const all=(typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta.workouts||[])).filter(x=>x.id!==w.id);
   all.push(w);
   setMeta('workouts',all);
