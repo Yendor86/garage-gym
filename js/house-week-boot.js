@@ -78,3 +78,34 @@
   }
   boot();
 })();
+
+/* House customs are shared until a safer per-person split exists. */
+function mySavedWorkouts(){
+  return (typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta&&db.meta.workouts)||[]).filter(Boolean);
+}
+function mergeWorkoutsMeta(local, cloud){
+  const A=Array.isArray(local)?local:[];
+  const B=Array.isArray(cloud)?cloud:[];
+  const by={};
+  function untagged(w){
+    return !w || w.user===undefined || w.user===null || w.user==='';
+  }
+  A.concat(B).forEach(function(w){
+    if(!w || w.id==null) return;
+    const id=String(w.id);
+    const n=(typeof liftCountOf==='function'?liftCountOf(typeof workoutItemList==='function'?workoutItemList(w):w.items||[]):((w.items||[]).length));
+    const cur=by[id];
+    const curN=cur?(typeof liftCountOf==='function'?liftCountOf(typeof workoutItemList==='function'?workoutItemList(cur):cur.items||[]):((cur.items||[]).length)):0;
+    if(!cur || n>curN) by[id]=w;
+    else if(n===curN && untagged(w) && !untagged(cur)) by[id]=w;
+  });
+  const seen=new Set(Object.keys(by));
+  const out=Object.keys(by).map(function(id){ return by[id]; });
+  B.concat(A).forEach(function(w){
+    if(!w || w.id==null) return;
+    if(seen.has(String(w.id))) return;
+    seen.add(String(w.id));
+    out.push(w);
+  });
+  return out;
+}
