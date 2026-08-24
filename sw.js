@@ -1,5 +1,5 @@
 /* Garage Gym PLAY shell cache. Allowlist only. Never cache set rows or Supabase. */
-const CACHE = 'garage-gym-play-v10';
+const CACHE = 'garage-gym-play-v12';
 const SHELL = [
   './',
   './index.html',
@@ -134,7 +134,7 @@ self.addEventListener('message',function(ev){
   restTo=setTimeout(function(){
     restTo=null;
     self.registration.showNotification('Garage Gym',{
-      body:'Rest done \u2014 GO!',
+      body:'Rest done — GO!',
       tag:'gg-rest',
       renotify:true
     }).catch(function(){});
