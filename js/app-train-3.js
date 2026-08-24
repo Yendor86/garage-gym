@@ -9,7 +9,7 @@ function hasPrep(){ return P&&P.items.some(i=>i.mob); }
 function moveItem(i,dir){
   const j=i+dir;
   if(j<0||j>=P.items.length) return;
-  if(P.items[i].mob||P.items[j].mob) return;
+  if(P.items[i].mob||P.items[j].mob) return;      // warm-up stays first, cool-down last
   const t=P.items[i]; P.items[i]=P.items[j]; P.items[j]=t;
   renderPreview();
 }
@@ -22,10 +22,10 @@ function orderItems(items){
   const rank=it=>{
     const l=LIB[it.ex];
     if(!l) return 5;
-    let r=l.t==='c'?0:2;
-    if(l.t==='c'&&l.g.some(g=>BIG.includes(g))) r=-1;
-    if(typeof TECH!=='undefined'&&TECH.has(it.ex)) r-=1;
-    if(l.g[0]==='core'&&l.t!=='c') r=3;
+    let r=l.t==='c'?0:2;                       // compounds before isolation
+    if(l.t==='c'&&l.g.some(g=>BIG.includes(g))) r=-1;   // big multi-joint lifts first
+    if(typeof TECH!=='undefined'&&TECH.has(it.ex)) r-=1; // skill/power work while freshest
+    if(l.g[0]==='core'&&l.t!=='c') r=3;        // core accessories last, not Front Squat etc.
     return r;
   };
   core.sort((a,b)=>rank(a)-rank(b));
@@ -46,6 +46,7 @@ function togglePrep(){
 }
 function openPreview(p){
   P=p;
+  // Generated sessions stay lift-first. Paragraph WU is opt-in (tap the prep button).
   if(p.src!=='build' && !p.items.some(i=>i.mob)&&p.items.length&&db.meta.prep!==false) p.items=withPrep(p.items);
   document.getElementById('pName').value=p.name;
   showPanel('preview');
@@ -130,24 +131,24 @@ function renderPreview(){
   const flags=[];
   const ys=((P.why&&P.why.length)?P.why:(P.src==='build'?trueWhys(P.items, selGroups):[])).slice(0,2);
   if(P.src!=='build') flags.push(gearBannerHtml(P.items));
-  if(P.src==='template'&&P.swapped&&P.swapped.length) flags.push('\u003cdiv class="card" style="border-color:var(--gold); margin:0 0 10px;"\u003eGarage swap: '+esc(P.swapped.join(' · '))+'\u003c/div\u003e');
-  if(flagged) flags.push('\u003cdiv class="card" style="border-color:var(--gold); margin:0 0 10px;"\u003e⚠️ '+flagged+' exercise'+(flagged>1?'s':'')+' below '+(flagged>1?'don\'t':'doesn\'t')+' match your profile (pull-ups or a joint you\'re going easy on). Tap ⇄ to swap '+(flagged>1?'them':'it')+' for something friendlier.\u003c/div\u003e');
+  if(P.src==='template'&&P.swapped&&P.swapped.length) flags.push('<div class="card" style="border-color:var(--gold); margin:0 0 10px;">Garage swap: '+esc(P.swapped.join(' · '))+'</div>');
+  if(flagged) flags.push('<div class="card" style="border-color:var(--gold); margin:0 0 10px;">⚠️ '+flagged+' exercise'+(flagged>1?'s':'')+' below '+(flagged>1?'don\'t':'doesn\'t')+' match your profile (pull-ups or a joint you\'re going easy on). Tap ⇄ to swap '+(flagged>1?'them':'it')+' for something friendlier.</div>');
   document.getElementById('pFlag').innerHTML=flags.join('');
   const whyEl=document.getElementById('pWhy');
   if(whyEl){
-    whyEl.innerHTML=ys.length? '\u003cdiv class="whybox"\u003e'+ys.map(y=>'\u003cdiv class="yl"\u003e'+esc(y)+'\u003c/div\u003e').join('')+'\u003c/div\u003e' : '';
+    whyEl.innerHTML=ys.length? '<div class="whybox">'+ys.map(y=>'<div class="yl">'+esc(y)+'</div>').join('')+'</div>' : '';
   }
   const rerollBtn=document.getElementById('rerollBtn');
   if(rerollBtn) rerollBtn.style.display=(P.src==='build'&&(selGroups.length||(lastBuild&&lastBuild.groups.length)))?'':'none';
   document.getElementById('prepBtn').textContent=hasPrep()?'🔥 Warm-up & cool-down: ON — tap to remove':'➕ Add tailored warm-up & cool-down';
-  document.getElementById('pList').innerHTML=P.items.map((it,i)=>{
-    if(it.mob) return '\u003cdiv class="prow" style="background:rgba(240,180,41,.05);"\u003e\u003cdiv style="flex:1;"\u003e\u003cdiv class="nm"\u003e'+(it.ex==='Warm-Up'?'🔥':'🧊')+' '+it.ex+' \u003cspan class="grptag"\u003e'+it.mins+' MIN\u003c/span\u003e\u003c/div\u003e\u003cdiv class="dt" style="line-height:1.4;"\u003e'+esc(it.tip)+'\u003c/div\u003e\u003c/div\u003e\u003cbutton onclick="P.items.splice('+i+',1);renderPreview()" title="remove"\u003e✕\u003c/button\u003e\u003c/div\u003e';
+  document.getElementById('pList').innerHTML=P.items.map(function(it,i){
+    if(it.mob) return '<div class="prow" style="background:rgba(240,180,41,.05);"><div style="flex:1;"><div class="nm">'+(it.ex==='Warm-Up'?'🔥':'🧊')+' '+it.ex+' <span class="grptag">'+it.mins+' MIN</span></div><div class="dt" style="line-height:1.4;">'+esc(it.tip)+'</div></div><button onclick="P.items.splice('+i+',1);renderPreview()" title="remove">✕</button></div>';
     if(it.cardio){
-      const c=CARDIO.find(x=>x.n===it.ex);
-      return '\u003cdiv class="prow" style="background:rgba(224,116,58,.07);"\u003e\u003cdiv style="flex:1;"\u003e\u003cdiv class="nm"\u003e'+(c?c.i:'❤️')+' '+esc(it.ex)+' \u003cspan class="grptag"\u003eCARDIO\u003c/span\u003e\u003c/div\u003e\u003cdiv class="dt"\u003e\u003cinput type="number" value="'+it.mins+'" style="width:62px; padding:5px; display:inline-block;" onchange="P.items['+i+'].mins=parseInt(this.value)||10;renderPreview()"\u003e min · \u003cspan style="color:var(--u); cursor:pointer;" onclick="P.items['+i+'].intensity=({easy:\'moderate\',moderate:\'hard\',hard:\'easy\'})[P.items['+i+'].intensity];renderPreview()"\u003e'+INTENSITY[it.intensity].l+' ⇄\u003c/span\u003e\u003c/div\u003e\u003c/div\u003e\u003cdiv style="display:flex; flex-direction:column; gap:2px;"\u003e\u003cbutton class="ord" onclick="moveItem('+i+',-1)"\u003e▲\u003c/button\u003e\u003cbutton class="ord" onclick="moveItem('+i+',1)"\u003e▼\u003c/button\u003e\u003c/div\u003e\u003cbutton onclick="P.items.splice('+i+',1);renderPreview()" title="remove"\u003e✕\u003c/button\u003e\u003c/div\u003e';
+      const c=CARDIO.find(function(x){ return x.n===it.ex; });
+      return '<div class="prow" style="background:rgba(224,116,58,.07);"><div style="flex:1;"><div class="nm">'+(c?c.i:'❤️')+' '+esc(it.ex)+' <span class="grptag">CARDIO</span></div><div class="dt"><input type="number" value="'+it.mins+'" style="width:62px; padding:5px; display:inline-block;" onchange="P.items['+i+'].mins=parseInt(this.value)||10;renderPreview()"> min · <span style="color:var(--u); cursor:pointer;" onclick="P.items['+i+'].intensity=({easy:\'moderate\',moderate:\'hard\',hard:\'easy\'})[P.items['+i+'].intensity];renderPreview()">'+INTENSITY[it.intensity].l+' ⇄</span></div></div><div style="display:flex; flex-direction:column; gap:2px;"><button class="ord" onclick="moveItem('+i+',-1)">▲</button><button class="ord" onclick="moveItem('+i+',1)">▼</button></div><button onclick="P.items.splice('+i+',1);renderPreview()" title="remove">✕</button></div>';
     }
     const l=LIB[it.ex], bad=blocked(it.ex);
-    const alt=altsFor(it.ex,P.items.map(x=>x.ex))[0];
+    const alt=altsFor(it.ex,P.items.map(function(x){ return x.ex; }))[0];
     const why=it.whySlot|| (P.src==='build'?'':gearWhy(it.ex));
     const lb=it.last||lastBest(it.ex);
     if(lb){
@@ -155,11 +156,14 @@ function renderPreview(){
       if(it.reps===undefined||it.reps===null||it.reps==='') it.reps=lb.reps||'';
     }
     const hasLoad=lb||it.wt||it.reps;
-    const loadLine=hasLoad? '\u003cdiv class="loadprefill"\u003e\u003cinput type="number" inputmode="decimal" step="0.5" value="'+(it.wt??'')+'" placeholder="kg" onchange="P.items['+i+'].wt=this.value===\'\'?'\'':parseFloat(this.value)"\u003e\u003cspan\u003ekg ×\u003c/span\u003e\u003cinput type="number" inputmode="numeric" value="'+(it.reps??'')+'" placeholder="reps" onchange="P.items['+i+'].reps=this.value===\'\'?'\'':parseInt(this.value)"\u003e\u003cspan\u003ereps\u003c/span\u003e\u003c/div\u003e' : '';
+    const loadLine=hasLoad? '<div class="loadprefill"><input type="number" inputmode="decimal" step="0.5" value="'+(it.wt==null?'':it.wt)+'" placeholder="kg" onchange="ggSetPrevWt('+i+',this.value)"><span>kg ×</span><input type="number" inputmode="numeric" value="'+(it.reps==null?'':it.reps)+'" placeholder="reps" onchange="ggSetPrevReps('+i+',this.value)"><span>reps</span></div>' : '';
     const bump=loadBumpHint(it.ex,it.tgt);
-    const hintLine=bump? '\u003cdiv class="hintline"\u003e'+esc(bump)+'\u003c/div\u003e' : '';
-    return '\u003cdiv class="prow"\u003e\u003cdiv style="flex:1;"\u003e\u003cdiv class="nm"\u003e'+(bad?'⚠️ ':'')+esc(it.ex)+(l?'\u003cspan class="grptag"\u003e'+GLABEL[l.g[0]]+'\u003c/span\u003e':'')+(why?'\u003cspan class="why"\u003e'+esc(why)+'\u003c/span\u003e':'')+lastOnTitle(lb,it.ex)+'\u003c/div\u003e\u003cdiv class="dt"\u003e'+it.sets+' × '+it.tgt+' · rest '+Math.round((it.rest||90)/60*10)/10+' min'+(alt?' · \u003cspan style="color:var(--u);"\u003eor '+esc(alt.n)+'\u003c/span\u003e':'')+'\u003c/div\u003e'+loadLine+hintLine+'\u003c/div\u003e\u003cdiv style="display:flex; flex-direction:column; gap:2px;"\u003e\u003cbutton class="ord" onclick="moveItem('+i+',-1)" title="move up"\u003e▲\u003c/button\u003e\u003cbutton class="ord" onclick="moveItem('+i+',1)" title="move down"\u003e▼\u003c/button\u003e\u003c/div\u003e\u003cbutton onclick="swapEx('+i+')" title="swap exercise"\u003e⇄\u003c/button\u003e\u003cbutton onclick="P.items.splice('+i+',1);renderPreview()" title="remove"\u003e✕\u003c/button\u003e\u003c/div\u003e';}).join('')||'\u003cdiv class="empty"\u003eEmpty — add exercises below.\u003c/div\u003e';
+    const hintLine=bump? '<div class="hintline">'+esc(bump)+'</div>' : '';
+    return '<div class="prow"><div style="flex:1;"><div class="nm">'+(bad?'⚠️ ':'')+esc(it.ex)+(l?'<span class="grptag">'+GLABEL[l.g[0]]+'</span>':'')+(why?'<span class="why">'+esc(why)+'</span>':'')+lastOnTitle(lb,it.ex)+'</div><div class="dt">'+it.sets+' × '+it.tgt+' · rest '+Math.round((it.rest||90)/60*10)/10+' min'+(alt?' · <span style="color:var(--u);">or '+esc(alt.n)+'</span>':'')+'</div>'+loadLine+hintLine+'</div><div style="display:flex; flex-direction:column; gap:2px;"><button class="ord" onclick="moveItem('+i+',-1)" title="move up">▲</button><button class="ord" onclick="moveItem('+i+',1)" title="move down">▼</button></div><button onclick="swapEx('+i+')" title="swap exercise">⇄</button><button onclick="P.items.splice('+i+',1);renderPreview()" title="remove">✕</button></div>';
+  }).join('')||'<div class="empty">Empty — add exercises below.</div>';
 }
+function ggSetPrevWt(i,v){ if(!P||!P.items[i]) return; P.items[i].wt=v===''?'':parseFloat(v); }
+function ggSetPrevReps(i,v){ if(!P||!P.items[i]) return; P.items[i].reps=v===''?'':parseInt(v); }
 function altsFor(name,exclude){
   const l=LIB[name]; if(!l) return [];
   const skip=new Set(exclude||[]);
@@ -185,7 +189,7 @@ function swapEx(i){
 let pickCb=null, pickAll=false, pickList=null, pickCbCardio=null;
 function addExercisePicker(){
   pickList=null;
-  document.getElementById('pickTitle').innerHTML='Exercise library \u003cspan class="muted" style="font-weight:400; font-size:.75rem;"\u003eA–Z + cardio · your gear\u003c/span\u003e';
+  document.getElementById('pickTitle').innerHTML='Exercise library <span class="muted" style="font-weight:400; font-size:.75rem;">A–Z + cardio · your gear</span>';
   pickCbCardio=(name)=>{
     P.items.push({ex:name,cardio:true,mins:15,intensity:'moderate'});
     renderPreview();
@@ -226,16 +230,18 @@ function renderPicker(){
   let cardioHtml='';
   if(!pickList){
     const cl=myCardio().filter(c=>c.n.toLowerCase().includes(s));
-    if(cl.length) cardioHtml='\u003cdiv class="pickhead"\u003e❤️ Cardio\u003c/div\u003e'+cl.map(c=>'\u003cbutton class="pickitem" onclick="pickCardio(\''+c.n.replace(/'/g,"\\'")+'\')"\u003e'+c.i+' '+c.n+'\u003cspan class="grptag"\u003etimed\u003c/span\u003e\u003c/button\u003e').join('');
+    if(cl.length) cardioHtml='<div class="pickhead">❤️ Cardio</div>'+cl.map(function(c){
+      return '<button class="pickitem" onclick="pickCardio('+JSON.stringify(c.n)+')">'+c.i+' '+c.n+'<span class="grptag">timed</span></button>';
+    }).join('');
   }
   const list=pickerMatches(raw, pickList, pickAll);
   let html='', letter='';
-  list.forEach(e=>{
+  list.forEach(function(e){
     const L=e.n[0].toUpperCase();
-    if(L!==letter){ letter=L; html+='\u003cdiv class="pickhead"\u003e'+L+'\u003c/div\u003e'; }
-    html+='\u003cbutton class="pickitem" onclick="pickExercise(\''+e.n.replace(/'/g,"\\'")+'\')"\u003e'+e.n+'\u003cspan class="grptag"\u003e'+GLABEL[e.g[0]]+'\u003c/span\u003e\u003c/button\u003e';
+    if(L!==letter){ letter=L; html+='<div class="pickhead">'+L+'</div>'; }
+    html+='<button class="pickitem" onclick="pickExercise('+JSON.stringify(e.n)+')">'+e.n+'<span class="grptag">'+GLABEL[e.g[0]]+'</span></button>';
   });
-  document.getElementById('pickList').innerHTML=cardioHtml+html||'\u003cdiv class="empty"\u003e'+pickerNoneMsg(raw, pickList, pickAll)+'\u003c/div\u003e';
+  document.getElementById('pickList').innerHTML=cardioHtml+html||'<div class="empty">'+pickerNoneMsg(raw, pickList, pickAll)+'</div>';
 }
 function pickCardio(n){
   document.getElementById('pickOverlay').style.display='none';
