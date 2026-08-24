@@ -111,7 +111,7 @@ function renderTrain(){
   document.getElementById('dayCards').innerHTML=groups.map(([g,title])=>
     (title?`<h2>${title}</h2>`:'')+TEMPLATES.filter(t=>t.group===g).map(card).join('')
   ).join('');
-  const cw=(typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta.workouts||[]));
+  const cw=(typeof mySavedWorkouts==='function'?mySavedWorkouts():(db.meta.workouts||[]));
   document.getElementById('customCards').innerHTML=cw.length?
     '<h2>Your workouts</h2>'+cw.map(w=>{
       const n=(typeof liftCountOf==='function'?liftCountOf(w.items):((w.items||[]).length));
@@ -125,7 +125,10 @@ function renderTrain(){
 }
 function deleteCustom(id){
   if(!confirm('Delete this saved workout?')) return;
-  setMeta('workouts',(db.meta.workouts||[]).filter(w=>w.id!==id));
+  const all=typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta.workouts||[]);
+  const w=all.find(x=>String(x.id)===String(id));
+  if(w && typeof ownsSavedWorkout==='function' && !ownsSavedWorkout(w)){ toast('Not yours'); return; }
+  setMeta('workouts',all.filter(x=>String(x.id)!==String(id)));
   renderAll();
 }
 
