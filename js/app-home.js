@@ -329,11 +329,59 @@ async function pullCloud(quiet){
     if(!db.users.some(u=>u.idx===db.current)) db.current=db.users[0].idx;
     const pendingMeta=new Set();
     db.outbox.forEach(o=>{ if(o.p==='household_meta'&&Array.isArray(o.b)) o.b.forEach(r=>pendingMeta.add(r.key)); });
-    metas.forEach(r=>{ if(!pendingMeta.has(r.key)) db.meta[r.key]=r.value; });
+    metas.forEach(r=>{
+      if(r.key==='workouts'){
+        db.meta.workouts=mergeWorkoutsMeta(db.meta.workouts, r.value);
+        return;
+      }
+      if(!pendingMeta.has(r.key)) db.meta[r.key]=r.value;
+    });
     persist(); setSync(db.outbox.length?'pending':'ok');
     renderAll();
     if(!quiet) toast('Synced ✓');
   }catch(e){ setSync('off'); }
+}
+function liftCountOf(items){
+  return (items||[]).filter(function(it){ return it && !it.mob; }).length;
+}
+function workoutItemList(w){
+  if(!w) return [];
+  return Array.isArray(w.items)? w.items : [];
+}
+function listHouseWorkouts(){
+  return Array.isArray(db.meta.workouts)? db.meta.workouts : [];
+}
+function mergeWorkoutsMeta(local, cloud){
+  const A=Array.isArray(local)?local:[];
+  const B=Array.isArray(cloud)?cloud:[];
+  const by={};
+  A.concat(B).forEach(function(w){
+    if(!w || w.id==null) return;
+    const id=String(w.id);
+    const n=liftCountOf(workoutItemList(w));
+    const cur=by[id];
+    if(!cur || n>liftCountOf(workoutItemList(cur))) by[id]=w;
+  });
+  const seen=new Set(Object.keys(by));
+  const out=Object.keys(by).map(function(id){ return by[id]; });
+  B.concat(A).forEach(function(w){
+    if(!w || w.id==null) return;
+    if(seen.has(String(w.id))) return;
+    seen.add(String(w.id));
+    out.push(w);
+  });
+  return out;
+}
+async function hydrateHouseWorkouts(){
+  if(!db.hh) return listHouseWorkouts();
+  try{
+    const rows=await sbGet('household_meta?household=eq.'+encodeURIComponent(db.hh)+'&key=eq.workouts');
+    if(rows && rows[0] && rows[0].value){
+      db.meta.workouts=mergeWorkoutsMeta(db.meta.workouts, rows[0].value);
+      persist();
+    }
+  }catch(e){}
+  return listHouseWorkouts();
 }
 function setMeta(k,v){
   db.meta[k]=v; persist();
