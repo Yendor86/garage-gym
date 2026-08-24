@@ -236,7 +236,6 @@ const AVOID_HIT={
   wrists:['Front Squat','Clean','Snatch','Push-Up','Handstand','Zercher','Renegade']
 };
 const PULL_MOVES=['Pull-Up','Chin-Up','Muscle-Up','Toes-to-Bar','Knees-to-Elbows','Commando'];
-/* technical / high-skill lifts — kept away from brand-new lifters */
 const TECH=new Set(['Power Clean','Hang Squat Clean','Hang Power Clean','Clean & Jerk','Snatch','Power Snatch','Push Jerk','Split Jerk','Jerk','Overhead Squat','Zercher Squat','Rack Pull','Muscle-Up','Muscle-Up Negative','Handstand Push-Up','Wall Walk','Pistol Squat','Turkish Get-Up','KB Bent Press','KB Snatch','KB Windmill','Bent Press','Thruster','DB Snatch','KB High Pull','Box Jump','Jump Squat','Burpee','Skull Crusher','JM Press']);
 const SKILL=new Set(['Wall Walk','Handstand Push-Up','Muscle-Up','Muscle-Up Negative','Pistol Squat','Turkish Get-Up','Toes-to-Bar']);
 function inferTags(e){
@@ -264,7 +263,7 @@ function blocked(name,q){
   q=q||quizOr();
   if(q.pull!=='yes'&&PULL_MOVES.some(p=>name.includes(p))){
     if(q.pull==='no') return true;
-    if(!/Negative|Scapular|Dead Hang/i.test(name)) return true;   // assisted: negatives & holds only
+    if(!/Negative|Scapular|Dead Hang/i.test(name)) return true;
   }
   if(q.level==='new'&&TECH.has(name)) return true;
   if(q.level!=='exp'&&SKILL.has(name)) return true;
@@ -273,7 +272,6 @@ function blocked(name,q){
     const tags=liftTags(name);
     if(tags.includes('impact')||inferTags(LIB[name]||{n:name}).includes('impact')) return true;
     if(/\b(Lunge|Pistol|Jump|Step-Up|Split Squat|Burpee)\b/i.test(name)) return true;
-    // keep Goblet / Sit-to-Stand / Box Squat / other non-lunge squats
   }
   return avoid.filter(a=>a!=='knees').some(a=>(AVOID_HIT[a]||[]).some(s=>name.includes(s)));
 }
@@ -350,6 +348,19 @@ function workoutItemList(w){
 }
 function listHouseWorkouts(){
   return Array.isArray(db.meta.workouts)? db.meta.workouts : [];
+}
+function mySavedWorkouts(){
+  const me=Number(db.current);
+  return listHouseWorkouts().filter(function(w){
+    if(!w) return false;
+    if(w.user===undefined||w.user===null||w.user==='') return true;
+    return Number(w.user)===me;
+  });
+}
+function ownsSavedWorkout(w){
+  if(!w) return false;
+  if(w.user===undefined||w.user===null||w.user==='') return true;
+  return Number(w.user)===Number(db.current);
 }
 function mergeWorkoutsMeta(local, cloud){
   const A=Array.isArray(local)?local:[];
@@ -499,7 +510,6 @@ function beep(){
       g.gain.exponentialRampToValueAtTime(0.001,t+len);
       o.start(t); o2.start(t); o.stop(t+len); o2.stop(t+len);
     };
-    // 3 get-ready beeps, 1s apart, then a longer GO
     blast(0,880,0.22);
     blast(1.0,880,0.22);
     blast(2.0,880,0.22);
@@ -585,7 +595,7 @@ function closeOverlay(id){
 }
 window.addEventListener('popstate',ev=>{
   const open=[...document.querySelectorAll('.overlay')].find(o=>o.style.display==='flex');
-  if(open){ open.style.display='none'; return; }          // back closes an overlay first
+  if(open){ open.style.display='none'; return; }
   const p=(ev.state&&ev.state.panel)||'home';
   if(p===activePanel&&p!=='home'){ applyPanel('home'); return; }
   applyPanel(p);
@@ -693,7 +703,7 @@ function updateEntry(id,fields){
   const e=db.entries.find(x=>x.id===id);
   if(!e) return;
   Object.assign(e,fields); persist();
-  queueOp('POST','entries',[entryRow(e)]);   // upsert on id = update
+  queueOp('POST','entries',[entryRow(e)]);
 }
 
 /* ================= history analysis ================= */
@@ -732,7 +742,6 @@ function renderHome(){
      <div><div class="t">${t.name}</div><div class="s">${t.sub}</div></div>
      <div class="go">START</div>`;
   document.getElementById('heroCta').onclick=()=>previewTemplate(nk);
-  // suggestion card
   const sg=staleGroups().filter(x=>x.days>=7);
   const sEl=document.getElementById('homeSuggest');
   if(sg.length&&mine().filter(e=>e.ex!=='Bodyweight').length>5){
@@ -830,7 +839,6 @@ function renderWeekStrip(){
     const d=addDays(ws,i), v=vols[d]||0;
     days.push({d,v}); if(v>0&&d<=t){ wkVol+=v; sess++; }
   }
-  // day streak ending today
   let dstreak=0, cur=t;
   while(vols[cur]>0){ dstreak++; cur=addDays(cur,-1); }
   const wkCardio=mine().filter(e=>(isCardio(e)||isMob(e))&&e.date>=ws&&e.date<=t).reduce((a,e)=>a+(e.mins||0),0);
@@ -890,7 +898,6 @@ function renderStrengthScore(lf){
     el.innerHTML=''; drawLine('snapChart',{labels:[],data:[]},cu().color); return;
   }
   document.getElementById('snapLabel').textContent=top.length+' main lifts · best e1RM added up';
-  // weekly running-best score
   const weeks=[...new Set(weighted.map(e=>weekStart(e.date)))].sort();
   const series={labels:[],data:[]};
   const bestBy={};
@@ -913,7 +920,6 @@ function renderStrengthScore(lf){
     : (series.data.length<2?'<b style="color:var(--text);">Baseline set.</b> Beat any of these lifts and this number climbs.'
        :'<b style="color:var(--text);">Holding steady.</b> Add a rep or 2.5kg to any main lift to move it.');
   drawLine('snapChart',series,cu().color);
-  // per-lift breakdown
   const cutoff=addDays(today(),-30);
   el.innerHTML=top.map(ex=>{
     const es=weighted.filter(e=>e.ex===ex);
