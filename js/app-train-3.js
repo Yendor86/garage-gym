@@ -46,27 +46,39 @@ function togglePrep(){
 }
 function openPreview(p){
   P=p;
+  if(!p.items) p.items=[];
   // Generated sessions stay lift-first. Paragraph WU is opt-in (tap the prep button).
   if(p.src!=='build' && !p.items.some(i=>i.mob)&&p.items.length&&db.meta.prep!==false) p.items=withPrep(p.items);
   document.getElementById('pName').value=p.name;
   showPanel('preview');
   document.querySelectorAll('nav .ni').forEach(x=>x.classList.remove('active'));
 }
-function previewTemplate(key){
-  const t=TEMPLATES.find(x=>x.key===key);
-  const ad=adaptTemplateItems(t);
-  const why=[];
-  if(ad.swapped.length) why.push('Swapped to your garage: '+ad.swapped.slice(0,2).join(', '));
-  if(ad.missing.length) why.push(ad.missing.length+' lift'+(ad.missing.length>1?'s':'')+' still need gear you do not use — tap swap');
-  if(typeof iUseHid==='function'&&iUseHid()) why.push('your picks');
-  openPreview({name:t.name, key, src:'template', items:ad.items, why, swapped:ad.swapped, missing:ad.missing});
+function realLiftItems(items){
+  return (items||[]).filter(function(it){ return it && !it.mob && !it.cardio && it.ex!=='__CARDIO__'; });
 }
 function cloneWorkoutItems(items){
   return (items||[]).map(function(it){
     if(!it) return it;
     if(it.mob||it.cardio) return Object.assign({}, it);
-    return Object.assign({}, it, {rest:it.rest||restFor(it.ex)});
+    return Object.assign({}, it, {rest:it.rest|| (typeof restFor==='function'?restFor(it.ex):it.rest)});
   });
+}
+function previewTemplate(key){
+  const t=(typeof TEMPLATES!=='undefined'?TEMPLATES:[]).find(function(x){ return x && x.key===key; });
+  if(!t){ if(typeof toast==='function') toast('Session not found'); return; }
+  const raw=cloneWorkoutItems(t.items||[]);
+  let ad={items:raw, swapped:[], missing:[]};
+  if(typeof adaptTemplateItems==='function'){
+    try{ ad=adaptTemplateItems(t)||ad; }catch(e){ ad={items:raw, swapped:[], missing:[]}; }
+  }
+  if(!realLiftItems(ad.items).length && realLiftItems(t.items).length){
+    ad={items:raw, swapped:[], missing:[]};
+  }
+  const why=[];
+  if(ad.swapped && ad.swapped.length) why.push('Swapped to your garage: '+ad.swapped.slice(0,2).join(', '));
+  if(ad.missing && ad.missing.length) why.push(ad.missing.length+' lift'+(ad.missing.length>1?'s':'')+' still need gear you do not use — tap swap');
+  if(typeof iUseHid==='function'&&iUseHid()) why.push('your picks');
+  openPreview({name:t.name, key, src:'template', items:ad.items||raw, why, swapped:ad.swapped||[], missing:ad.missing||[]});
 }
 function adaptSavedWorkoutItems(items){
   const raw=(items||[]).filter(Boolean);
@@ -75,11 +87,14 @@ function adaptSavedWorkoutItems(items){
   const cardio=raw.filter(function(it){ return it.cardio; });
   const core=raw.filter(function(it){ return !it.mob && !it.cardio; });
   if(!core.length) return cloneWorkoutItems(raw);
+  /* Saved customs keep stored lifts. Never replace the session with cardio-only. */
+  if(typeof hasLiftGear==='function' && !hasLiftGear()) return cloneWorkoutItems(raw);
   if(typeof adaptTemplateItems!=='function') return cloneWorkoutItems(raw);
   const ad=adaptTemplateItems({items:core});
-  const lifts=(ad.items||[]).filter(function(it){ return it && !it.cardio; });
+  const lifts=(ad.items||[]).filter(function(it){ return it && !it.cardio && !it.mob && it.ex!=='__CARDIO__'; });
+  if(!lifts.length) return cloneWorkoutItems(raw);
   const extra=(ad.items||[]).filter(function(it){ return it && it.cardio; });
-  let out=warm.concat(lifts).concat(cardio).concat(extra).concat(cool);
+  const out=warm.concat(lifts).concat(cardio).concat(extra).concat(cool);
   if(typeof liftCountOf==='function' && liftCountOf(out)===0 && liftCountOf(core)>0){
     return cloneWorkoutItems(raw);
   }
@@ -96,9 +111,11 @@ function fillPreviewFromGarage(name){
 }
 function openCustomWorkout(w){
   if(!w) return;
-  let items=typeof workoutItemList==='function'?workoutItemList(w):((w.items)||[]);
-  items=adaptSavedWorkoutItems(items);
-  if((typeof liftCountOf==='function'?liftCountOf(items):items.length)===0){
+  const stored=cloneWorkoutItems(typeof workoutItemList==='function'?workoutItemList(w):((w.items)||[]));
+  let items=adaptSavedWorkoutItems(stored);
+  if(!realLiftItems(items).length && realLiftItems(stored).length){
+    items=cloneWorkoutItems(stored);
+  } else if(!(items||[]).length){
     const filled=fillPreviewFromGarage(w.name);
     if(filled.length) items=filled;
   }
