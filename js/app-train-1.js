@@ -111,14 +111,16 @@ function renderTrain(){
   document.getElementById('dayCards').innerHTML=groups.map(([g,title])=>
     (title?`<h2>${title}</h2>`:'')+TEMPLATES.filter(t=>t.group===g).map(card).join('')
   ).join('');
-  const cw=db.meta.workouts||[];
+  const cw=(typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta.workouts||[]));
   document.getElementById('customCards').innerHTML=cw.length?
-    '<h2>Your workouts</h2>'+cw.map(w=>
-      `<div class="daycard" onclick="previewCustom('${w.id}')">
+    '<h2>Your workouts</h2>'+cw.map(w=>{
+      const n=(typeof liftCountOf==='function'?liftCountOf(w.items):((w.items||[]).length));
+      return `<div class="daycard" onclick="previewCustom('${w.id}')">
         <div class="badge" style="background:#2bb3a3;">MINE</div>
-        <div><div class="t">${w.name}</div><div class="s">${w.items.length} exercises · ~${w.est||'?'} min</div></div>
+        <div><div class="t">${w.name}</div><div class="s">${n} exercises · ~${w.est||'?'} min</div></div>
         <button class="zap" onclick="event.stopPropagation();deleteCustom('${w.id}')">✕</button>
-      </div>`).join('')
+      </div>`;
+    }).join('')
     :'';
 }
 function deleteCustom(id){
