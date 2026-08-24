@@ -354,14 +354,17 @@ function buildMyWeek(){
   if(!confirm('Build a '+q.days+'-day plan for '+cu().name+'?\n\n'+split.map((s,i)=>'Day '+(i+1)+' — '+s[0]).join('\n')+'\n\nThey\'ll be saved under "Your workouts" and you can edit any of them.')) return;
   let used=new Set(), made=[];
   const hist=liftHist();
-  const all=(db.meta.workouts||[]).filter(w=>!/^Plan · /.test(w.name));
+  const all=(typeof listHouseWorkouts==='function'?listHouseWorkouts():(db.meta.workouts||[])).filter(function(w){
+    if(!/^Plan · /.test(w.name)) return true;
+    return Number(w.user)!==Number(db.current);
+  });
   split.forEach(([name,groups],i)=>{
     const lock=patternKeyFromName(name);
     let r=buildItems(groups,{used,hist,reserve:0,lock});
     if(r.items.length<3){ used=new Set(); r=buildItems(groups,{hist,reserve:0,lock}); }   // reset pool if we ran dry
     r.used.forEach(x=>used.add(x));
     if(r.items.length){
-      all.push({id:uid(),name:'Plan · Day '+(i+1)+' — '+name,items:r.items.map(it=>({ex:it.ex,sets:it.sets,tgt:it.tgt,rest:it.rest})),est:estTime(r.items)});
+      all.push({id:uid(),user:db.current,name:'Plan · Day '+(i+1)+' — '+name,items:r.items.map(it=>({ex:it.ex,sets:it.sets,tgt:it.tgt,rest:it.rest})),est:estTime(r.items)});
       made.push(name);
     }
   });
@@ -373,4 +376,3 @@ function buildMyWeek(){
   toast('Your '+made.length+'-day plan is ready 🗓');
   showPanel('train');
 }
-
